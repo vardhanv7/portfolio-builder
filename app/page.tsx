@@ -1,65 +1,129 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { Globe, Layers, Zap } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { templateRegistry } from "@/templates";
+import { cn } from "@/lib/utils";
+
+const FEATURES = [
+  {
+    Icon: Globe,
+    title: "Public URL",
+    description:
+      "Your portfolio is a shareable public link. No hosting setup needed.",
+  },
+  {
+    Icon: Layers,
+    title: "3 Templates",
+    description:
+      "Modern, Minimal, or Creative. Switch anytime from the preview page.",
+  },
+  {
+    Icon: Zap,
+    title: "HTML Export",
+    description:
+      "Download a self-contained HTML file to host anywhere you like.",
+  },
+];
+
+const TEMPLATE_ACCENTS: Record<string, string> = {
+  modern: "bg-zinc-900",
+  minimal: "bg-gray-100 border-b",
+  creative: "bg-violet-950",
+};
+
+const TEMPLATE_ORDER = ["modern", "minimal", "creative"] as const;
 
 export default function Home() {
+  const year = new Date().getFullYear();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="flex flex-col min-h-screen">
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="flex-1 bg-gradient-to-b from-zinc-50 to-white px-6 py-24 md:py-36">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-5xl font-bold tracking-tight text-gray-900 md:text-6xl">
+            Build your portfolio
+            <br />
+            <span className="text-primary">in minutes</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+            Fill out your details, pick a template, and get a shareable public
+            URL — no coding required.
           </p>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/login"
+              className={cn(buttonVariants({ size: "lg" }))}
+            >
+              Get Started Free
+            </Link>
+            <Link
+              href="/builder"
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+            >
+              Open Builder
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* ── Features ─────────────────────────────────────────────────────── */}
+      <section className="bg-white px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-12 text-center text-2xl font-semibold text-gray-900">
+            Everything you need
+          </h2>
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-3">
+            {FEATURES.map(({ Icon, title, description }) => (
+              <div key={title} className="flex flex-col items-start gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Icon className="size-5 text-primary" />
+                </div>
+                <p className="font-semibold text-gray-900">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* ── Template Showcase ─────────────────────────────────────────────── */}
+      <section className="bg-zinc-50 px-6 py-20">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-12 text-center text-2xl font-semibold text-gray-900">
+            Three templates, one builder
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {TEMPLATE_ORDER.map((id) => {
+              const config = templateRegistry[id];
+              return (
+                <div
+                  key={id}
+                  className="overflow-hidden rounded-xl border bg-white"
+                >
+                  {/* Color band */}
+                  <div className={cn("h-3 w-full", TEMPLATE_ACCENTS[id])} />
+                  <div className="p-5">
+                    <p className="font-semibold text-gray-900">{config.name}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {config.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ───────────────────────────────────────────────────────── */}
+      <footer className="border-t bg-white px-6 py-8 text-center text-sm text-muted-foreground">
+        © {year} Portfolio Builder
+      </footer>
     </div>
   );
 }
