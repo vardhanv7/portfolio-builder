@@ -5,12 +5,18 @@ import { z } from "zod";
 // ---------------------------------------------------------------------------
 // Zod schema — all portfolio sections are optional on upsert so users can
 // save partial progress through the multi-step builder.
+//
+// NOTE: Do NOT add .min(1) or .url() constraints here. This is a progressive-
+// save API — fields like bio, project titles, and descriptions are legitimately
+// empty while the user is still filling them in. Format validation belongs in
+// the UI forms, not in the persistence layer. Tightening these schemas causes
+// auto-save to fail mid-session with 422 errors.
 // ---------------------------------------------------------------------------
 const personalSchema = z.object({
-  name: z.string().min(1),
-  title: z.string().min(1),
-  bio: z.string().min(1),
-  avatar: z.string().url().optional(),
+  name: z.string(),
+  title: z.string(),
+  bio: z.string(),         // optional in UI — may be "" during editing
+  avatar: z.string().optional(),
 });
 
 const skillSchema = z.object({
@@ -20,11 +26,11 @@ const skillSchema = z.object({
 });
 
 const projectSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
+  title: z.string(),       // new project cards start with ""
+  description: z.string(), // optional in UI — may be "" during editing
   techStack: z.array(z.string()),
-  url: z.string().url().optional(),
-  image: z.string().url().optional(),
+  url: z.string().optional(),   // URL format checked in UI, not here
+  image: z.string().optional(),
 });
 
 const experienceSchema = z.object({
@@ -41,14 +47,16 @@ const educationSchema = z.object({
 });
 
 const socialSchema = z.object({
-  github: z.string().url().optional(),
-  linkedin: z.string().url().optional(),
-  twitter: z.string().url().optional(),
-  website: z.string().url().optional(),
+  // No .url() — users may type partial URLs ("github.com/user") or empty
+  // strings before completing them. Format validation is in the UI.
+  github: z.string().optional(),
+  linkedin: z.string().optional(),
+  twitter: z.string().optional(),
+  website: z.string().optional(),
 });
 
 const contactSchema = z.object({
-  email: z.string().email(),
+  email: z.string(),       // validated in UI; may be "" for new users on first save
   location: z.string().optional(),
 });
 
@@ -86,7 +94,8 @@ export async function GET() {
     .single();
 
   if (error && error.code !== "PGRST116") {
-    // PGRST116 = row not found, which is fine for new users
+    // PGRST116 = row not found — fine for new users who haven't saved yet
+    console.error("[GET /api/portfolio] Supabase error:", error.code, error.message);
     return NextResponse.json({ data: null, error: "Failed to fetch portfolio" }, { status: 500 });
   }
 
@@ -105,6 +114,9 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
+    if (authError) {
+      console.error("[POST /api/portfolio] Auth error:", authError.message);
+    }
     return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
   }
 
@@ -117,8 +129,10 @@ export async function POST(request: Request) {
 
   const parsed = portfolioUpsertSchema.safeParse(body);
   if (!parsed.success) {
+    const flat = parsed.error.flatten();
+    console.error("[POST /api/portfolio] Zod validation failed:", JSON.stringify(flat));
     return NextResponse.json(
-      { data: null, error: parsed.error.flatten() },
+      { data: null, error: "Validation failed", details: flat },
       { status: 422 }
     );
   }
@@ -133,7 +147,17 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ data: null, error: "Failed to save portfolio" }, { status: 500 });
+    console.error(
+      "[POST /api/portfolio] Supabase upsert error:",
+      error.code,
+      error.message,
+      error.details,
+      error.hint
+    );
+    return NextResponse.json(
+      { data: null, error: "Failed to save portfolio", code: error.code },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ data, error: null });

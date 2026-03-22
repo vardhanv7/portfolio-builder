@@ -142,10 +142,15 @@ export default function BuilderPage() {
             contact: portfolioData.contact,
           }),
         });
-        if (!res.ok) throw new Error("Save failed");
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          console.error("[auto-save] failed", res.status, errBody);
+          throw new Error("Save failed");
+        }
         setIsSaved(true);
         toast.success("Portfolio saved!");
-      } catch {
+      } catch (err) {
+        console.error("[auto-save] error", err);
         toast.error("Auto-save failed");
       } finally {
         setIsLoading(false);
