@@ -51,10 +51,24 @@ export default function PersonalInfoStep() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Watch individual fields as primitives so effect deps are compared by value,
+  // not by object reference. watch() with no args returns a new object every
+  // render, which would cause an infinite update loop once safeParse succeeds.
+  const nameVal = watch("name");
+  const titleVal = watch("title");
+  const bioVal = watch("bio");
+  const emailVal = watch("email");
+  const locationVal = watch("location");
+
   // Sync valid form values → store
-  const values = watch();
   useEffect(() => {
-    const result = personalSchema.safeParse(values);
+    const result = personalSchema.safeParse({
+      name: nameVal,
+      title: titleVal,
+      bio: bioVal,
+      email: emailVal,
+      location: locationVal,
+    });
     if (!result.success) return;
     updatePersonal({
       name: result.data.name,
@@ -65,10 +79,9 @@ export default function PersonalInfoStep() {
       email: result.data.email,
       location: result.data.location || undefined,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values]);
+  }, [nameVal, titleVal, bioVal, emailVal, locationVal, updatePersonal, updateContact]);
 
-  const bioLength = watch("bio")?.length ?? 0;
+  const bioLength = bioVal?.length ?? 0;
 
   return (
     <div className="flex flex-col gap-6">
