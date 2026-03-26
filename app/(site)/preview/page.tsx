@@ -82,10 +82,9 @@ export default function PreviewPage() {
           if (json.data.avatar_url) setAvatarUrl(json.data.avatar_url);
           if (json.data.theme) setTheme(json.data.theme);
           if (json.data.sectionOrder?.length) setSectionOrder(json.data.sectionOrder);
-
-          if (json.data.is_published === true) {
-            setIsPublished(true);
-          }
+          // Note: we intentionally do NOT restore is_published here.
+          // isPublished should only become true when the user explicitly
+          // clicks Publish in this session — not just because they published before.
         }
       } catch {
         toast.error("Failed to load portfolio data");
@@ -246,7 +245,12 @@ export default function PreviewPage() {
       {/* Live preview */}
       {dataReady ? (
         <div className="rounded-xl border overflow-auto max-h-[70vh] bg-white">
-          <TemplateComponent data={portfolioData} theme={theme} sectionOrder={sectionOrder} portfolioUserId={userId ?? undefined} />
+          <TemplateComponent
+            data={{ ...portfolioData, avatar_url: avatarUrl ?? undefined }}
+            theme={theme}
+            sectionOrder={sectionOrder}
+            portfolioUserId={userId ?? undefined}
+          />
         </div>
       ) : (
         <Skeleton className="h-[70vh] rounded-xl" />

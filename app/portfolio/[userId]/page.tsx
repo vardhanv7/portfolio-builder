@@ -69,6 +69,7 @@ export default async function PortfolioPage({ params }: PageProps) {
     social: (portfolio.social as PortfolioData["social"]) ?? {},
     contact: (portfolio.contact as PortfolioData["contact"]) ?? { email: "" },
     sectionOrder: (portfolio.section_order as string[]) ?? [],
+    avatar_url: (portfolio.avatar_url as string | null) ?? undefined,
   };
 
   const theme = (portfolio.theme as ThemeConfig) ?? undefined;
