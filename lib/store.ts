@@ -1,17 +1,37 @@
 import { create } from "zustand";
-import type { PortfolioData } from "@/types/portfolio";
+import type { PortfolioData, ThemeConfig } from "@/types/portfolio";
 
 type Skill = PortfolioData["skills"][0];
 type Project = PortfolioData["projects"][0];
 type Experience = PortfolioData["experience"][0];
 type Education = PortfolioData["education"][0];
 
+const DEFAULT_SECTION_ORDER = [
+  "home",
+  "about",
+  "education",
+  "skills",
+  "projects",
+  "experience",
+  "contact",
+];
+
+const DEFAULT_THEME: ThemeConfig = {
+  mode: "single",
+  primary: "#3b82f6",
+  secondary: "#8b5cf6",
+  preset: "ocean",
+};
+
 interface PortfolioStore {
   portfolioData: PortfolioData;
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2 | 3 | 4 | 5;
   selectedTemplate: "modern" | "minimal" | "creative";
   isLoading: boolean;
   isSaved: boolean;
+  avatarUrl: string | null;
+  theme: ThemeConfig;
+  sectionOrder: string[];
 
   updatePersonal: (personal: Partial<PortfolioData["personal"]>) => void;
   updateSkills: (skills: PortfolioData["skills"]) => void;
@@ -26,11 +46,14 @@ interface PortfolioStore {
   removeEducation: (index: number) => void;
   updateSocial: (social: Partial<PortfolioData["social"]>) => void;
   updateContact: (contact: Partial<PortfolioData["contact"]>) => void;
-  setStep: (step: 1 | 2 | 3 | 4) => void;
+  setStep: (step: 1 | 2 | 3 | 4 | 5) => void;
   setTemplate: (template: "modern" | "minimal" | "creative") => void;
   setFullData: (data: Partial<PortfolioData>) => void;
   setIsLoading: (v: boolean) => void;
   setIsSaved: (v: boolean) => void;
+  setAvatarUrl: (url: string | null) => void;
+  setTheme: (theme: ThemeConfig) => void;
+  setSectionOrder: (order: string[]) => void;
 }
 
 const initialPortfolioData: PortfolioData = {
@@ -41,6 +64,7 @@ const initialPortfolioData: PortfolioData = {
   education: [],
   social: {},
   contact: { email: "" },
+  sectionOrder: DEFAULT_SECTION_ORDER,
 };
 
 export const usePortfolioStore = create<PortfolioStore>((set) => ({
@@ -49,6 +73,9 @@ export const usePortfolioStore = create<PortfolioStore>((set) => ({
   selectedTemplate: "modern",
   isLoading: false,
   isSaved: false,
+  avatarUrl: null,
+  theme: DEFAULT_THEME,
+  sectionOrder: DEFAULT_SECTION_ORDER,
 
   updatePersonal: (personal) =>
     set((state) => ({
@@ -165,9 +192,13 @@ export const usePortfolioStore = create<PortfolioStore>((set) => ({
         education: data.education ?? state.portfolioData.education,
         social: { ...state.portfolioData.social, ...(data.social ?? {}) },
         contact: { ...state.portfolioData.contact, ...(data.contact ?? {}) },
+        sectionOrder: data.sectionOrder ?? state.portfolioData.sectionOrder,
       },
     })),
 
   setIsLoading: (v) => set({ isLoading: v }),
   setIsSaved: (v) => set({ isSaved: v }),
+  setAvatarUrl: (url) => set({ avatarUrl: url }),
+  setTheme: (theme) => set({ theme }),
+  setSectionOrder: (order) => set({ sectionOrder: order }),
 }));

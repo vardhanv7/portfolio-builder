@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { ModernTemplate, MinimalTemplate, CreativeTemplate } from "@/templates";
-import type { PortfolioData } from "@/types/portfolio";
+import type { PortfolioData, ThemeConfig } from "@/types/portfolio";
 
 export const revalidate = 60;
 
@@ -68,10 +68,14 @@ export default async function PortfolioPage({ params }: PageProps) {
     education: (portfolio.education as PortfolioData["education"]) ?? [],
     social: (portfolio.social as PortfolioData["social"]) ?? {},
     contact: (portfolio.contact as PortfolioData["contact"]) ?? { email: "" },
+    sectionOrder: (portfolio.section_order as string[]) ?? [],
   };
 
+  const theme = (portfolio.theme as ThemeConfig) ?? undefined;
   const templateName = ((portfolio.template_name as string) ?? "modern") as TemplateName;
   const TemplateComponent = TEMPLATE_MAP[templateName] ?? ModernTemplate;
 
-  return <TemplateComponent data={portfolioData} />;
+  const sectionOrder = (portfolio.section_order as string[] | null) ?? undefined;
+
+  return <TemplateComponent data={portfolioData} theme={theme} sectionOrder={sectionOrder} portfolioUserId={userId} />;
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { PortfolioData } from "@/types/portfolio";
+import type { PortfolioData, ThemeConfig } from "@/types/portfolio";
 
 // ── HTML generators ────────────────────────────────────────────────────────
 
@@ -28,11 +28,30 @@ function socialLinks(social: PortfolioData["social"]): string {
     .join("\n    ");
 }
 
+// ── Contact section (mailto fallback for exported HTML) ───────────────────
+
+function buildContactSection(contact: PortfolioData["contact"], personal: PortfolioData["personal"], bgClass: string, textClass: string, borderStyle: string): string {
+  if (!contact.email) return "";
+  return `<section class="${bgClass} px-6 py-16" style="${borderStyle}">
+  <div class="mx-auto max-w-4xl">
+    <h2 class="mb-6 text-xs font-semibold uppercase tracking-widest ${textClass}">Get in Touch</h2>
+    <p style="font-size:14px;margin-bottom:8px">Have a question or want to work together?</p>
+    <a href="mailto:${esc(contact.email)}" style="font-size:14px;color:inherit">${esc(contact.email)}</a>
+    ${contact.location ? `<p style="font-size:13px;margin-top:6px;opacity:0.6">${esc(contact.location)}</p>` : ""}
+    <p style="margin-top:24px;font-size:12px;opacity:0.4">© ${new Date().getFullYear()} ${esc(personal.name || "")}</p>
+  </div>
+</section>`;
+}
+
 // ── Modern (dark) ──────────────────────────────────────────────────────────
 
-function buildModern(data: PortfolioData): string {
+function buildModern(data: PortfolioData, theme?: ThemeConfig): string {
   const { personal, skills, projects, experience, education, social, contact } =
     data;
+  const primary = theme?.primary ?? "#3b82f6";
+  const avatarHtml = data.avatar_url
+    ? `<img src="${esc(data.avatar_url)}" alt="${esc(personal.name)}" style="width:192px;height:192px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 4px ${primary}40" />`
+    : "";
 
   const skillsHtml =
     skills.length > 0
@@ -111,33 +130,40 @@ function buildModern(data: PortfolioData): string {
 </section>`
       : "";
 
+  const contactHtml = buildContactSection(contact, personal, "bg-zinc-900", "text-zinc-500", "border-top:1px solid #27272a;color:#a1a1aa");
   return `<div class="min-h-screen bg-zinc-950 text-white font-sans">
   <section class="px-6 py-24 bg-zinc-950">
-    <div class="mx-auto max-w-4xl">
-      <h1 class="text-5xl font-bold text-white">${esc(personal.name || "Your Name")}</h1>
-      <p class="mt-3 text-lg text-blue-400">${esc(personal.title || "")}</p>
-      ${personal.bio ? `<p class="mt-6 max-w-xl text-zinc-400">${esc(personal.bio)}</p>` : ""}
-      <div class="mt-6 flex flex-wrap gap-4 text-sm text-zinc-500">
-        ${contact.email ? `<a href="mailto:${esc(contact.email)}" class="hover:text-white">${esc(contact.email)}</a>` : ""}
-        ${socialLinks(social)}
+    <div class="mx-auto max-w-4xl" style="display:flex;align-items:center;gap:48px;flex-wrap:wrap">
+      <div style="flex:1;min-width:280px">
+        <h1 class="text-5xl font-bold text-white">${esc(personal.name || "Your Name")}</h1>
+        <p class="mt-3 text-lg" style="color:${primary}">${esc(personal.title || "")}</p>
+        ${personal.tagline ? `<p class="mt-3" style="font-size:15px;color:#a1a1aa">${esc(personal.tagline)}</p>` : ""}
+        ${personal.bio ? `<p class="mt-4 max-w-xl" style="font-size:14px;color:#71717a">${esc(personal.bio)}</p>` : ""}
+        <div class="mt-6 flex flex-wrap gap-4 text-sm text-zinc-500">
+          ${contact.email ? `<a href="mailto:${esc(contact.email)}" style="color:#a1a1aa">${esc(contact.email)}</a>` : ""}
+          ${socialLinks(social)}
+        </div>
       </div>
+      ${avatarHtml ? `<div>${avatarHtml}</div>` : ""}
     </div>
   </section>
   ${skillsHtml}
   ${projectsHtml}
   ${expHtml}
   ${eduHtml}
-  <footer class="px-6 py-10 bg-zinc-950 border-t border-zinc-800 text-center text-sm text-zinc-600">
-    © ${new Date().getFullYear()} ${esc(personal.name || "")}
-  </footer>
+  ${contactHtml}
 </div>`;
 }
 
 // ── Minimal (light) ────────────────────────────────────────────────────────
 
-function buildMinimal(data: PortfolioData): string {
+function buildMinimal(data: PortfolioData, theme?: ThemeConfig): string {
   const { personal, skills, projects, experience, education, social, contact } =
     data;
+  const primary = theme?.primary ?? "#3b82f6";
+  const avatarHtml = data.avatar_url
+    ? `<img src="${esc(data.avatar_url)}" alt="${esc(personal.name)}" style="width:144px;height:144px;border-radius:50%;object-fit:cover;outline:2px solid ${primary}33;outline-offset:3px" />`
+    : "";
 
   const skillsHtml =
     skills.length > 0
@@ -224,12 +250,15 @@ function buildMinimal(data: PortfolioData): string {
 </section>`
       : "";
 
+  const contactHtml = buildContactSection(contact, personal, "bg-white", "text-gray-400", "border-top:1px solid #f3f4f6;color:#6b7280");
   return `<div class="min-h-screen bg-white text-gray-900 font-sans">
   <section class="px-6 py-24 bg-white">
     <div class="mx-auto max-w-3xl">
+      ${avatarHtml ? `<div style="margin-bottom:24px">${avatarHtml}</div>` : ""}
       <h1 class="text-5xl italic font-serif text-gray-900">${esc(personal.name || "Your Name")}</h1>
-      <p class="mt-4 text-sm font-medium uppercase tracking-widest text-gray-500">${esc(personal.title || "")}</p>
-      ${personal.bio ? `<p class="mt-8 max-w-xl text-base text-gray-600">${esc(personal.bio)}</p>` : ""}
+      <p class="mt-4 text-sm font-medium uppercase tracking-widest" style="color:${primary}">${esc(personal.title || "")}</p>
+      ${personal.tagline ? `<p class="mt-3" style="font-size:14px;color:#6b7280">${esc(personal.tagline)}</p>` : ""}
+      ${personal.bio ? `<p class="mt-6 max-w-xl text-base text-gray-600">${esc(personal.bio)}</p>` : ""}
       <div class="mt-8 flex flex-wrap gap-5 text-sm text-gray-500">
         ${contact.email ? `<a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a>` : ""}
         ${socialLinks(social)}
@@ -241,17 +270,20 @@ function buildMinimal(data: PortfolioData): string {
   ${projectsHtml}
   ${expHtml}
   ${eduHtml}
-  <footer class="px-6 py-12 bg-white border-t border-gray-100 text-center text-xs text-gray-400">
-    © ${new Date().getFullYear()} ${esc(personal.name || "")}
-  </footer>
+  ${contactHtml}
 </div>`;
 }
 
 // ── Creative (dark + gradient) ─────────────────────────────────────────────
 
-function buildCreative(data: PortfolioData): string {
+function buildCreative(data: PortfolioData, theme?: ThemeConfig): string {
   const { personal, skills, projects, experience, education, social, contact } =
     data;
+  const primary = theme?.primary ?? "#7c3aed";
+  const secondary = theme?.secondary ?? "#ec4899";
+  const avatarHtml = data.avatar_url
+    ? `<div style="position:relative;display:inline-block;border-radius:50%;padding:3px;background:linear-gradient(135deg,${primary},${secondary})"><img src="${esc(data.avatar_url)}" alt="${esc(personal.name)}" style="width:160px;height:160px;border-radius:50%;object-fit:cover;display:block" /></div>`
+    : "";
 
   const skillsHtml =
     skills.length > 0
@@ -330,25 +362,28 @@ function buildCreative(data: PortfolioData): string {
 </section>`
       : "";
 
+  const contactHtml = buildContactSection(contact, personal, "", "text-violet-400", "border-top:1px solid #1f1f3a;background:#030712;color:#9ca3af");
   return `<div class="min-h-screen font-sans text-white" style="background:#030712">
   <section class="relative px-6 py-32 overflow-hidden" style="background:linear-gradient(135deg,#0f0f23,#1a0533,#0f0f23)">
-    <div class="mx-auto max-w-4xl relative z-10">
-      <h1 class="text-6xl font-black" style="background:linear-gradient(to right,#a78bfa,#e879f9,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${esc(personal.name || "Your Name")}</h1>
-      <p class="mt-4 text-lg font-medium text-cyan-400">${esc(personal.title || "")}</p>
-      ${personal.bio ? `<p class="mt-6 max-w-xl text-gray-300">${esc(personal.bio)}</p>` : ""}
-      <div class="mt-8 flex flex-wrap gap-4 text-sm text-gray-400">
-        ${contact.email ? `<a href="mailto:${esc(contact.email)}" class="text-violet-400">${esc(contact.email)}</a>` : ""}
-        ${socialLinks(social)}
+    <div class="mx-auto max-w-4xl relative z-10" style="display:flex;align-items:center;gap:48px;flex-wrap:wrap">
+      <div style="flex:1;min-width:280px">
+        <h1 class="text-6xl font-black" style="background:linear-gradient(to right,${primary},${secondary});-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${esc(personal.name || "Your Name")}</h1>
+        <p class="mt-4 text-lg font-medium" style="color:${primary}">${esc(personal.title || "")}</p>
+        ${personal.tagline ? `<p class="mt-3" style="font-size:14px;color:#9ca3af">${esc(personal.tagline)}</p>` : ""}
+        ${personal.bio ? `<p class="mt-6 max-w-xl text-gray-300">${esc(personal.bio)}</p>` : ""}
+        <div class="mt-8 flex flex-wrap gap-4 text-sm text-gray-400">
+          ${contact.email ? `<a href="mailto:${esc(contact.email)}" style="color:${primary}">${esc(contact.email)}</a>` : ""}
+          ${socialLinks(social)}
+        </div>
       </div>
+      ${avatarHtml ? `<div>${avatarHtml}</div>` : ""}
     </div>
   </section>
   ${skillsHtml}
   ${projectsHtml}
   ${expHtml}
   ${eduHtml}
-  <footer class="px-6 py-10 text-center text-sm text-gray-600" style="border-top:1px solid #1f1f3a">
-    © ${new Date().getFullYear()} ${esc(personal.name || "")}
-  </footer>
+  ${contactHtml}
 </div>`;
 }
 
@@ -387,19 +422,22 @@ export async function GET() {
     education: (portfolio.education as PortfolioData["education"]) ?? [],
     social: (portfolio.social as PortfolioData["social"]) ?? {},
     contact: (portfolio.contact as PortfolioData["contact"]) ?? { email: "" },
+    sectionOrder: (portfolio.section_order as string[]) ?? [],
+    avatar_url: (portfolio.avatar_url as string | null) ?? undefined,
   };
 
+  const theme = (portfolio.theme as ThemeConfig) ?? undefined;
   const templateName = (portfolio.template_name as string) ?? "modern";
   const name = portfolioData.personal.name || "Portfolio";
 
-  const builders: Record<string, (d: PortfolioData) => string> = {
+  const builders: Record<string, (d: PortfolioData, t?: ThemeConfig) => string> = {
     modern: buildModern,
     minimal: buildMinimal,
     creative: buildCreative,
   };
 
   const buildBody = builders[templateName] ?? buildModern;
-  const body = buildBody(portfolioData);
+  const body = buildBody(portfolioData, theme);
 
   const html = `<!DOCTYPE html>
 <html lang="en">

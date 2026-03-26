@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import TemplatePreviewCard from "@/components/shared/TemplatePreviewCard";
 import { ModernTemplate, MinimalTemplate, CreativeTemplate, templateRegistry } from "@/templates";
+import ColorPicker from "./components/ColorPicker";
+import SectionOrderManager from "./components/SectionOrderManager";
 import { createClient } from "@/lib/supabase/client";
 import { usePortfolioStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -26,7 +28,8 @@ const TEMPLATE_MAP = {
 const TEMPLATE_ORDER: TemplateName[] = ["modern", "minimal", "creative"];
 
 export default function PreviewPage() {
-  const { portfolioData, setFullData, setIsSaved } = usePortfolioStore();
+  const { portfolioData, theme, avatarUrl, sectionOrder, setFullData, setAvatarUrl, setTheme, setSectionOrder, setIsSaved } =
+    usePortfolioStore();
 
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
   const [userId, setUserId] = useState<string | null>(null);
@@ -46,7 +49,13 @@ export default function PreviewPage() {
 
         const res = await fetch("/api/portfolio");
         const json = (await res.json()) as {
-          data: (PortfolioData & { template_name: string | null; is_published: boolean | null }) | null;
+          data:
+            | (PortfolioData & {
+                template_name: string | null;
+                is_published: boolean | null;
+                avatar_url?: string | null;
+              })
+            | null;
           error: string | null;
         };
 
@@ -66,8 +75,13 @@ export default function PreviewPage() {
               education: json.data.education,
               social: json.data.social,
               contact: json.data.contact,
+              sectionOrder: json.data.sectionOrder,
             });
           }
+
+          if (json.data.avatar_url) setAvatarUrl(json.data.avatar_url);
+          if (json.data.theme) setTheme(json.data.theme);
+          if (json.data.sectionOrder?.length) setSectionOrder(json.data.sectionOrder);
 
           if (json.data.is_published === true) {
             setIsPublished(true);
@@ -93,6 +107,9 @@ export default function PreviewPage() {
         body: JSON.stringify({
           template_name: selectedTemplate,
           is_published: true,
+          avatar_url: avatarUrl,
+          theme,
+          section_order: sectionOrder,
         }),
       });
       if (!res.ok) throw new Error("Publish failed");
@@ -128,13 +145,11 @@ export default function PreviewPage() {
               <p className="mt-2 text-muted-foreground">Share it with the world.</p>
             </div>
 
-            {/* URL display */}
             <div className="w-full rounded-lg border bg-muted px-4 py-3 text-sm font-mono break-all text-center">
               {typeof window !== "undefined" ? window.location.origin : ""}
               {publicUrl}
             </div>
 
-            {/* Primary actions */}
             <div className="flex flex-wrap justify-center gap-3">
               <Button onClick={handleCopyLink} variant="outline">
                 <Copy className="mr-2 size-4" />
@@ -153,12 +168,8 @@ export default function PreviewPage() {
 
             <Separator />
 
-            {/* Secondary actions */}
             <div className="flex flex-wrap justify-center gap-3">
-              <Link
-                href="/builder"
-                className={cn(buttonVariants({ variant: "ghost" }))}
-              >
+              <Link href="/builder" className={cn(buttonVariants({ variant: "ghost" }))}>
                 <ArrowLeft className="mr-2 size-4" />
                 Edit Builder
               </Link>
@@ -180,7 +191,7 @@ export default function PreviewPage() {
         <div>
           <h1 className="text-2xl font-bold">Preview Your Portfolio</h1>
           <p className="mt-1 text-muted-foreground">
-            Choose a template, then publish to get your public URL.
+            Choose a template, pick your colors, then publish.
           </p>
         </div>
         <Link
@@ -192,37 +203,50 @@ export default function PreviewPage() {
         </Link>
       </div>
 
-      {/* Template selector */}
-      {dataReady ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-          {TEMPLATE_ORDER.map((id) => {
-            const config = templateRegistry[id];
-            return (
-              <TemplatePreviewCard
-                key={id}
-                id={id}
-                name={config.name}
-                description={config.description}
-                selected={selectedTemplate === id}
-                onSelect={() => setSelectedTemplate(id)}
-              />
-            );
-          })}
+      {/* ── Row 1: Template selector ─────────────────────────────────────────── */}
+      <div className="mb-6">
+        <p className="mb-3 text-sm font-semibold">Template</p>
+        {dataReady ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {TEMPLATE_ORDER.map((id) => {
+              const config = templateRegistry[id];
+              return (
+                <TemplatePreviewCard
+                  key={id}
+                  id={id}
+                  name={config.name}
+                  description={config.description}
+                  selected={selectedTemplate === id}
+                  onSelect={() => setSelectedTemplate(id)}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Row 2: Color picker + Section order ──────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-6">
+        <div className="rounded-xl border bg-card p-5">
+          <ColorPicker />
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
-          ))}
+        <div className="rounded-xl border bg-card p-5">
+          <SectionOrderManager />
         </div>
-      )}
+      </div>
 
       <Separator className="mb-6" />
 
       {/* Live preview */}
       {dataReady ? (
         <div className="rounded-xl border overflow-auto max-h-[70vh] bg-white">
-          <TemplateComponent data={portfolioData} />
+          <TemplateComponent data={portfolioData} theme={theme} sectionOrder={sectionOrder} portfolioUserId={userId ?? undefined} />
         </div>
       ) : (
         <Skeleton className="h-[70vh] rounded-xl" />
@@ -230,10 +254,7 @@ export default function PreviewPage() {
 
       {/* Footer actions */}
       <div className="flex items-center justify-between mt-6 pt-6 border-t">
-        <Link
-          href="/builder"
-          className={cn(buttonVariants({ variant: "ghost" }))}
-        >
+        <Link href="/builder" className={cn(buttonVariants({ variant: "ghost" }))}>
           <ArrowLeft className="mr-1.5 size-4" />
           Edit Portfolio
         </Link>

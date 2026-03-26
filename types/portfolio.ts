@@ -1,7 +1,16 @@
+export type ThemeConfig = {
+  mode: "single" | "combination";
+  primary: string;
+  secondary: string;
+  preset: string | null;
+};
+
 export interface PortfolioData {
+  avatar_url?: string;
   personal: {
     name: string;
     title: string;
+    tagline?: string;
     bio: string;
     avatar?: string;
   };
@@ -38,4 +47,6 @@ export interface PortfolioData {
     email: string;
     location?: string;
   };
+  theme?: ThemeConfig;
+  sectionOrder: string[];
 }

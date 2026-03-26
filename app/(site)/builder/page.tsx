@@ -14,6 +14,7 @@ import { usePortfolioStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import type { PortfolioData } from "@/types/portfolio";
 import PersonalInfoStep from "./components/PersonalInfoStep";
+import AboutStep from "./components/AboutStep";
 import SkillsStep from "./components/SkillsStep";
 import ProjectsStep from "./components/ProjectsStep";
 import ExperienceStep from "./components/ExperienceStep";
@@ -37,18 +38,22 @@ interface PortfolioStatus {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const STEP_LABELS: Record<1 | 2 | 3 | 4, string> = {
+const TOTAL_STEPS = 5;
+
+const STEP_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
   1: "Personal Info",
-  2: "Skills",
-  3: "Projects",
-  4: "Experience",
+  2: "About & Photo",
+  3: "Skills",
+  4: "Projects",
+  5: "Experience",
 };
 
-const STEP_COMPONENTS: Record<1 | 2 | 3 | 4, React.ComponentType> = {
+const STEP_COMPONENTS: Record<1 | 2 | 3 | 4 | 5, React.ComponentType> = {
   1: PersonalInfoStep,
-  2: SkillsStep,
-  3: ProjectsStep,
-  4: ExperienceStep,
+  2: AboutStep,
+  3: SkillsStep,
+  4: ProjectsStep,
+  5: ExperienceStep,
 };
 
 // ── Page ───────────────────────────────────────────────────────────────────
@@ -62,8 +67,14 @@ export default function BuilderPage() {
     currentStep,
     isLoading,
     isSaved,
+    avatarUrl,
+    theme,
+    sectionOrder,
     setStep,
     setFullData,
+    setAvatarUrl,
+    setTheme,
+    setSectionOrder,
     setIsLoading,
     setIsSaved,
   } = usePortfolioStore();
@@ -76,7 +87,6 @@ export default function BuilderPage() {
   useEffect(() => {
     async function load() {
       try {
-        // Fetch userId in parallel with portfolio data
         const supabase = createClient();
         const [
           {
@@ -103,7 +113,12 @@ export default function BuilderPage() {
             education: json.data.education,
             social: json.data.social,
             contact: json.data.contact,
+            sectionOrder: json.data.sectionOrder,
           });
+
+          if (json.data.avatar_url) setAvatarUrl(json.data.avatar_url);
+          if (json.data.theme) setTheme(json.data.theme);
+          if (json.data.sectionOrder?.length) setSectionOrder(json.data.sectionOrder);
 
           setPortfolioStatus({
             isPublished: json.data.is_published ?? false,
@@ -140,6 +155,9 @@ export default function BuilderPage() {
             education: portfolioData.education,
             social: portfolioData.social,
             contact: portfolioData.contact,
+            avatar_url: avatarUrl,
+            theme,
+            section_order: sectionOrder,
           }),
         });
         if (!res.ok) {
@@ -159,7 +177,7 @@ export default function BuilderPage() {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [portfolioData]);
+  }, [portfolioData, avatarUrl, theme, sectionOrder]);
 
   // ── Unpublish ─────────────────────────────────────────────────────────────
   async function handleUnpublish() {
@@ -201,7 +219,7 @@ export default function BuilderPage() {
       }
       return true;
     }
-    if (currentStep === 2) {
+    if (currentStep === 3) {
       if (portfolioData.skills.length === 0) {
         toast.error("Add at least one skill to continue");
         return false;
@@ -213,7 +231,7 @@ export default function BuilderPage() {
 
   function handleNext() {
     if (!validateCurrentStep()) return;
-    setStep((currentStep + 1) as 2 | 3 | 4);
+    setStep((currentStep + 1) as 2 | 3 | 4 | 5);
   }
 
   async function handleFinish() {
@@ -230,6 +248,9 @@ export default function BuilderPage() {
           education: portfolioData.education,
           social: portfolioData.social,
           contact: portfolioData.contact,
+          avatar_url: avatarUrl,
+          theme,
+          section_order: sectionOrder,
         }),
       });
       if (!res.ok) throw new Error("Save failed");
@@ -241,7 +262,7 @@ export default function BuilderPage() {
   }
 
   const StepComponent = STEP_COMPONENTS[currentStep];
-  const progressValue = (currentStep / 4) * 100;
+  const progressValue = (currentStep / TOTAL_STEPS) * 100;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -299,7 +320,7 @@ export default function BuilderPage() {
       {/* ── Step header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-medium">
-          Step {currentStep} of 4:{" "}
+          Step {currentStep} of {TOTAL_STEPS}:{" "}
           <span className="text-muted-foreground">{STEP_LABELS[currentStep]}</span>
         </p>
         <div className="flex items-center gap-1.5 text-sm">
@@ -317,7 +338,9 @@ export default function BuilderPage() {
       {/* ── Progress bar ─────────────────────────────────────────────────── */}
       <div className="mb-8">
         <Progress value={progressValue}>
-          <ProgressLabel className="sr-only">Step {currentStep} of 4</ProgressLabel>
+          <ProgressLabel className="sr-only">
+            Step {currentStep} of {TOTAL_STEPS}
+          </ProgressLabel>
         </Progress>
       </div>
 
@@ -344,12 +367,12 @@ export default function BuilderPage() {
         <Button
           variant="outline"
           disabled={currentStep === 1}
-          onClick={() => setStep((currentStep - 1) as 1 | 2 | 3)}
+          onClick={() => setStep((currentStep - 1) as 1 | 2 | 3 | 4)}
         >
           Back
         </Button>
 
-        {currentStep < 4 ? (
+        {currentStep < TOTAL_STEPS ? (
           <Button onClick={handleNext} disabled={!dataReady}>
             Next
           </Button>

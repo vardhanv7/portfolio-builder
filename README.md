@@ -7,12 +7,16 @@ A full-stack web application where developers create and publish a professional 
 ## Features
 
 - **OAuth authentication** — Sign in with GitHub or Google via Supabase Auth
-- **Multi-step builder** — Guided 4-step form: Personal Info → Skills → Projects → Experience & Education
+- **Multi-step builder** — Guided 5-step form: Personal Info → About & Photo → Skills → Projects → Experience
 - **Auto-save** — Portfolio data is debounced and saved to Supabase automatically as you type
 - **3 portfolio templates** — Modern (dark), Minimal (editorial white), Creative (gradient animations)
+- **Color theming** — Pick a single accent color or a two-tone combination from curated presets, or enter custom hex values
+- **Profile photo** — Upload a profile picture; stored in Supabase Storage with circular crop display across all templates
+- **Section reordering** — Drag-and-drop to reorder portfolio sections; hide/show sections with a toggle; Home section always stays first
+- **Contact form** — Built-in contact form on every published portfolio; emails are forwarded to the owner via Resend; honeypot spam protection + IP-based rate limiting
 - **Live preview** — See your portfolio rendered with real data before publishing
 - **Public URLs** — Every published portfolio gets a unique shareable URL (`/portfolio/{userId}`)
-- **HTML export** — Download a self-contained `portfolio.html` file to host anywhere
+- **HTML export** — Download a self-contained `portfolio.html` file (includes theme colors, avatar, and a mailto fallback for the contact section)
 - **ISR** — Public portfolio pages use Incremental Static Regeneration (60s revalidate)
 - **Responsive** — All templates and the builder UI work at 375px and up
 
@@ -27,6 +31,8 @@ A full-stack web application where developers create and publish a professional 
 | Styling | Tailwind CSS v4 |
 | UI Components | shadcn/ui (Base UI primitives) |
 | Animations | Framer Motion 12 |
+| Drag & Drop | @dnd-kit/core + @dnd-kit/sortable |
+| Email | Resend |
 | Icons | Lucide React |
 | Forms | React Hook Form 7 + Zod 4 |
 | Global State | Zustand 5 |
@@ -58,17 +64,21 @@ Create a `.env.local` file in the project root:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+RESEND_API_KEY=re_your_resend_api_key
 ```
 
 > The service role key is not required — all auth uses the anon key with Row Level Security.
 
+To get a Resend API key: sign up at [resend.com](https://resend.com), create an API key, and add a verified sending domain (or use `onboarding@resend.dev` for testing).
+
 ### Database Setup
 
-Run the SQL in `supabase-schema.sql` against your Supabase project:
+Run the SQL migrations against your Supabase project:
 
 1. Open your Supabase dashboard → **SQL Editor**
-2. Paste the contents of `supabase-schema.sql` and run it
-3. This creates the `portfolios` table and all RLS policies
+2. Run `supabase-schema.sql` first — creates the `portfolios` table and RLS policies
+3. Run `supabase-migration-v2.sql` — adds `avatar_url`, `theme`, and `section_order` columns
+4. Create a **Storage bucket** named `avatars` with **Public** access (Storage → New Bucket → name: `avatars`, Public: on)
 
 ### Run Locally
 
@@ -91,6 +101,7 @@ See the [Deployment Instructions](#deployment-instructions) section at the botto
 portfolio-builder/
 ├── app/
 │   ├── api/
+│   │   ├── contact/route.ts        # POST — contact form email via Resend
 │   │   ├── export/route.ts         # GET — downloads portfolio.html
 │   │   └── portfolio/route.ts      # GET/POST — portfolio CRUD
 │   ├── auth/callback/route.ts      # OAuth callback handler
@@ -117,6 +128,7 @@ portfolio-builder/
 │       └── server.ts               # Server Supabase client
 ├── templates/
 │   ├── index.ts                    # Template registry + exports
+│   ├── shared/ContactForm.tsx      # Shared contact form (client component)
 │   ├── modern/ModernTemplate.tsx   # Dark, bold layout
 │   ├── minimal/MinimalTemplate.tsx # Light, editorial layout
 │   └── creative/CreativeTemplate.tsx # Gradient + Framer Motion
@@ -153,6 +165,7 @@ In your Vercel project → **Settings → Environment Variables**, add:
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
+| `RESEND_API_KEY` | Your Resend API key (for contact form emails) |
 
 Redeploy after adding variables.
 

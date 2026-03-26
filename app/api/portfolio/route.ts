@@ -15,6 +15,7 @@ import { z } from "zod";
 const personalSchema = z.object({
   name: z.string(),
   title: z.string(),
+  tagline: z.string().optional(),
   bio: z.string(),         // optional in UI — may be "" during editing
   avatar: z.string().optional(),
 });
@@ -60,6 +61,13 @@ const contactSchema = z.object({
   location: z.string().optional(),
 });
 
+const themeSchema = z.object({
+  mode: z.enum(["single", "combination"]),
+  primary: z.string(),
+  secondary: z.string(),
+  preset: z.string().nullable(),
+});
+
 const portfolioUpsertSchema = z.object({
   template_name: z.enum(["modern", "minimal", "creative"]).optional(),
   personal: personalSchema.optional(),
@@ -70,6 +78,9 @@ const portfolioUpsertSchema = z.object({
   social: socialSchema.optional(),
   contact: contactSchema.optional(),
   is_published: z.boolean().optional(),
+  avatar_url: z.string().nullable().optional(),
+  theme: themeSchema.optional(),
+  section_order: z.array(z.string()).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -99,7 +110,16 @@ export async function GET() {
     return NextResponse.json({ data: null, error: "Failed to fetch portfolio" }, { status: 500 });
   }
 
-  return NextResponse.json({ data: data ?? null, error: null });
+  if (!data) {
+    return NextResponse.json({ data: null, error: null });
+  }
+
+  // Map DB column section_order → sectionOrder for the client
+  const { section_order, ...rest } = data;
+  return NextResponse.json({
+    data: { ...rest, sectionOrder: section_order ?? [] },
+    error: null,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -137,10 +157,17 @@ export async function POST(request: Request) {
     );
   }
 
+  const { section_order, ...parsedRest } = parsed.data;
+
   const { data, error } = await supabase
     .from("portfolios")
     .upsert(
-      { ...parsed.data, user_id: user.id, updated_at: new Date().toISOString() },
+      {
+        ...parsedRest,
+        ...(section_order !== undefined ? { section_order } : {}),
+        user_id: user.id,
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "user_id" }
     )
     .select()
