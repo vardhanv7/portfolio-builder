@@ -19,6 +19,16 @@ export default async function Navbar() {
         .slice(0, 2)
     : "?";
 
+  let unreadCount = 0;
+  if (user) {
+    const { count } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("portfolio_owner_id", user.id)
+      .eq("is_read", false);
+    unreadCount = count ?? 0;
+  }
+
   return (
     <header className="border-b bg-background relative">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -35,6 +45,7 @@ export default async function Navbar() {
             initials={initials}
             fullName={fullName}
             isLoggedIn={!!user}
+            unreadCount={unreadCount}
           />
         </div>
       </div>

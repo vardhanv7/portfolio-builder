@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Mail } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/actions/auth";
@@ -12,6 +12,7 @@ interface NavbarClientProps {
   initials: string;
   fullName?: string;
   isLoggedIn: boolean;
+  unreadCount: number;
 }
 
 export default function NavbarClient({
@@ -19,6 +20,7 @@ export default function NavbarClient({
   initials,
   fullName,
   isLoggedIn,
+  unreadCount,
 }: NavbarClientProps) {
   const [open, setOpen] = useState(false);
 
@@ -39,6 +41,23 @@ export default function NavbarClient({
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Preview
+            </Link>
+            {/* Messages icon + unread badge */}
+            <Link
+              href="/messages"
+              aria-label={
+                unreadCount > 0
+                  ? `Messages (${unreadCount} unread)`
+                  : "Messages"
+              }
+              className="relative text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Mail className="size-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold text-primary-foreground leading-none">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
             <Avatar className="h-8 w-8">
               <AvatarImage src={avatarUrl} alt={fullName ?? "User"} />
@@ -87,6 +106,18 @@ export default function NavbarClient({
                 className="flex items-center h-9 px-2 text-sm rounded-md hover:bg-muted transition-colors"
               >
                 Preview
+              </Link>
+              <Link
+                href="/messages"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between h-9 px-2 text-sm rounded-md hover:bg-muted transition-colors"
+              >
+                <span>Messages</span>
+                {unreadCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Link>
               <form action={signOut} className="mt-1">
                 <button

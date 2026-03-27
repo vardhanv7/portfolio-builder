@@ -106,7 +106,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // ── Send email via Resend ───────────────────────────────────────────────────
+  // ── Save to in-app inbox (primary — always required) ───────────────────────
+  const { error: dbError } = await supabase.from("messages").insert({
+    portfolio_owner_id: portfolioUserId,
+    sender_name: name,
+    sender_email: email,
+    message,
+  });
+
+  if (dbError) {
+    console.error("[contact] DB insert error:", dbError.code, dbError.message);
+    return NextResponse.json(
+      { error: "Failed to save message" },
+      { status: 500 }
+    );
+  }
+
+  // ── Email notification (best-effort — don't fail if Resend is down) ────────
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   const { error: sendError } = await resend.emails.send({
@@ -129,14 +145,14 @@ export async function POST(req: NextRequest) {
   });
 
   if (sendError) {
-    console.error("[contact] Resend error:", sendError);
-    return NextResponse.json(
-      { error: "Failed to send email" },
-      { status: 500 }
-    );
+    // Non-fatal: message is already saved to the in-app inbox
+    console.error("[contact] Resend error (non-fatal):", sendError);
   }
 
-  return NextResponse.json({ data: "ok" });
+  return NextResponse.json({
+    data: "ok",
+    note: "Message saved. Email notification also sent.",
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
