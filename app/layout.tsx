@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   // Replace PLACEHOLDER_VERIFICATION_CODE with your actual code from
   // Google Search Console → Settings → Ownership verification → HTML tag method
   verification: {
-    google: "PLACEHOLDER_VERIFICATION_CODE",
+    google: "r_vTz2GdEMqF_hhkw2KY5UiAMi5ePHELlxEoacJJBiI",
   },
 };
 
