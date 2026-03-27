@@ -6,6 +6,8 @@ import type { PortfolioData, ThemeConfig } from "@/types/portfolio";
 
 export const revalidate = 60;
 
+const BASE_URL = "https://portfolio-builder-alpha-topaz.vercel.app";
+
 const TEMPLATE_MAP = {
   modern: ModernTemplate,
   minimal: MinimalTemplate,
@@ -31,21 +33,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq("is_published", true)
     .single();
 
-  const name =
-    (data?.personal as { name?: string } | null)?.name ?? "Portfolio";
+  const personal = data?.personal as { name?: string; title?: string; bio?: string } | null;
+  const name = personal?.name ?? "Portfolio";
+  const title = personal?.title ?? "";
+  const bio = personal?.bio ?? "";
+
+  const canonicalUrl = `${BASE_URL}/portfolio/${userId}`;
+  const description = bio
+    ? bio.length > 155
+      ? bio.slice(0, 152) + "..."
+      : bio
+    : `View ${name}'s portfolio${title ? ` — ${title}` : ""}`;
 
   return {
     title: `${name} — Portfolio`,
-    description: `View ${name}'s portfolio`,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title: `${name} — Portfolio`,
-      description: `View ${name}'s portfolio`,
+      description,
+      url: canonicalUrl,
       type: "profile",
     },
     twitter: {
       card: "summary_large_image",
       title: `${name} — Portfolio`,
-      description: `View ${name}'s portfolio`,
+      description,
     },
   };
 }
@@ -85,8 +100,57 @@ export default async function PortfolioPage({ params }: PageProps) {
   const theme = (portfolio.theme as ThemeConfig) ?? undefined;
   const templateName = ((portfolio.template_name as string) ?? "modern") as TemplateName;
   const TemplateComponent = TEMPLATE_MAP[templateName] ?? ModernTemplate;
-
   const sectionOrder = (portfolio.section_order as string[] | null) ?? undefined;
 
-  return <TemplateComponent data={portfolioData} theme={theme} sectionOrder={sectionOrder} portfolioUserId={userId} />;
+  const canonicalUrl = `${BASE_URL}/portfolio/${userId}`;
+
+  // ── JSON-LD structured data ──────────────────────────────────────────────────
+
+  const { personal, social, contact, skills } = portfolioData;
+
+  const sameAs = [
+    social.github,
+    social.linkedin,
+    social.twitter,
+    social.website,
+  ].filter((url): url is string => !!url && url.trim().length > 0);
+
+  const personSchema = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: personal.name,
+    ...(personal.title ? { jobTitle: personal.title } : {}),
+    ...(personal.bio ? { description: personal.bio } : {}),
+    url: canonicalUrl,
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+    ...(skills.length > 0 ? { knowsAbout: skills.map((s) => s.name) } : {}),
+    ...(contact.email ? { email: contact.email } : {}),
+  };
+
+  const webPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `${personal.name}'s Portfolio`,
+    ...(personal.bio ? { description: personal.bio } : {}),
+    url: canonicalUrl,
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }}
+      />
+      <TemplateComponent
+        data={portfolioData}
+        theme={theme}
+        sectionOrder={sectionOrder}
+        portfolioUserId={userId}
+      />
+    </>
+  );
 }

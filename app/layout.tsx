@@ -14,8 +14,34 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio Builder",
-  description: "Build and publish your developer portfolio in minutes",
+  metadataBase: new URL("https://portfolio-builder-alpha-topaz.vercel.app"),
+  title: {
+    default: "PortfolioBuilder — Create Your Professional Portfolio in Minutes",
+    template: "%s — PortfolioBuilder",
+  },
+  description:
+    "Build and publish your professional portfolio for free in minutes. Choose from 3 beautiful templates and get a shareable public URL — no coding required.",
+  keywords: [
+    "portfolio builder",
+    "free portfolio",
+    "developer portfolio",
+    "personal website",
+    "online portfolio",
+    "portfolio maker",
+  ],
+  openGraph: {
+    siteName: "PortfolioBuilder",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
+  // Replace PLACEHOLDER_VERIFICATION_CODE with your actual code from
+  // Google Search Console → Settings → Ownership verification → HTML tag method
+  verification: {
+    google: "PLACEHOLDER_VERIFICATION_CODE",
+  },
 };
 
 export default function RootLayout({
