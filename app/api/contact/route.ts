@@ -112,17 +112,19 @@ export async function POST(req: NextRequest) {
   const { error: sendError } = await resend.emails.send({
     from: "Portfolio Contact <onboarding@resend.dev>",
     to: ownerEmail,
-    subject: `New message from ${name}: ${subject}`,
+    replyTo: email,
+    subject: `New message from ${name} via your portfolio`,
     html: `
       <h2 style="font-family:sans-serif;color:#111">New Contact Form Message</h2>
       <table style="font-family:sans-serif;font-size:14px;color:#444;border-collapse:collapse">
-        <tr><td style="padding:4px 12px 4px 0;font-weight:600">From</td><td>${esc(name)} &lt;${esc(email)}&gt;</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;font-weight:600">Name</td><td>${esc(name)}</td></tr>
+        <tr><td style="padding:4px 12px 4px 0;font-weight:600">Email</td><td><a href="mailto:${esc(email)}" style="color:#2563eb">${esc(email)}</a></td></tr>
         <tr><td style="padding:4px 12px 4px 0;font-weight:600">Subject</td><td>${esc(subject)}</td></tr>
       </table>
       <p style="font-family:sans-serif;font-size:14px;color:#444;font-weight:600;margin-top:16px">Message</p>
       <p style="font-family:sans-serif;font-size:14px;color:#444;white-space:pre-wrap">${esc(message)}</p>
       <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
-      <p style="font-family:sans-serif;font-size:12px;color:#999"><em>Sent via Portfolio Builder contact form</em></p>
+      <p style="font-family:sans-serif;font-size:12px;color:#999"><em>Hit Reply to respond directly to ${esc(name)} at ${esc(email)}. Sent via Portfolio Builder.</em></p>
     `,
   });
 
