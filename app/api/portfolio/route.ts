@@ -30,7 +30,8 @@ const projectSchema = z.object({
   title: z.string(),       // new project cards start with ""
   description: z.string(), // optional in UI — may be "" during editing
   techStack: z.array(z.string()),
-  url: z.string().optional(),   // URL format checked in UI, not here
+  url: z.string().optional(),       // URL format checked in UI, not here
+  githubUrl: z.string().optional(),
   image: z.string().optional(),
 });
 

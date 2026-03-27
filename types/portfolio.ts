@@ -24,6 +24,7 @@ export interface PortfolioData {
     description: string;
     techStack: string[];
     url?: string;
+    githubUrl?: string;
     image?: string;
   }[];
   experience: {

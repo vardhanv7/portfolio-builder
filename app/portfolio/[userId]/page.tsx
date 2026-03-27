@@ -37,6 +37,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${name} — Portfolio`,
     description: `View ${name}'s portfolio`,
+    openGraph: {
+      title: `${name} — Portfolio`,
+      description: `View ${name}'s portfolio`,
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${name} — Portfolio`,
+      description: `View ${name}'s portfolio`,
+    },
   };
 }
 
